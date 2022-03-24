@@ -30,11 +30,11 @@ node.name: node-1
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-#path.data: /var/lib/elasticsearch
+path.data: /var/lib/elasticsearch
 #
 # Path to log files:
 #
-#path.logs: /var/log/elasticsearch
+path.logs: /var/log/elasticsearch
 #
 # ----------------------------------- Memory -----------------------------------
 #
@@ -53,7 +53,7 @@ node.name: node-1
 # By default Elasticsearch is only accessible on localhost. Set a different
 # address here to expose this node on the network:
 #
-network.host: localhost
+network.host: "localhost"
 #
 # By default Elasticsearch listens for HTTP traffic on the first free port it
 # finds starting at 9200. Set a specific HTTP port here:
