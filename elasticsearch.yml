@@ -30,7 +30,7 @@ node.name: node-1
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /home/data
+path.data: /var/lib/elasticsearch
 #
 # Path to log files:
 #
