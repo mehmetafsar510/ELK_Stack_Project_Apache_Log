@@ -61,19 +61,13 @@ sudo apt-get update && sudo apt-get install elasticsearch
 #
 node.name: node-1
 
-# ---------------------------------- Network -----------------------------------
+# Network -----------------------------------
 #
 # Set the bind address to a specific IP (IPv4 or IPv6):
-#
 network.host: "localhost"
-#
 # Set a custom port for HTTP:
-#
 http.port: 9200
-#
-# For more information, consult the network module documentation.
-#
-# --------------------------------- Discovery ----------------------------------
+# Discovery ----------------------------------
 cluster.initial_master_nodes: ["node-1"]
 
 * **## You need to configure JVM heap size to be in the safe side when running the ElasticSearch. Since we are running an m4.large instance, we will allocate 4GB as the heap size. Edit the file “/etc/elasticsearch/jvm.options” and enable the “-Xms4g” lines. 
@@ -157,28 +151,10 @@ sudo nano /etc/kibana/kibana.yml
 # Kibana is served by a back end server. This setting specifies the port to use.
 server.port: 5601
 # Specifies the address to which the Kibana server will bind. IP addresses and host names are both valid values.
-# The default is 'localhost', which usually means remote machines will not be able to connect.
-# To allow connections from remote users, set this parameter to a non-loopback address.
 server.host: "0.0.0.0"
 # Enables you to specify a path to mount Kibana at if you are running behind a proxy.
-# Use the `server.rewriteBasePath` setting to tell Kibana if it should remove the basePath
-# from requests it receives, and to prevent a deprecation warning at startup.
-# This setting cannot end in a slash.
-# server.basePath: ""
-# Specifies whether Kibana should rewrite requests that are prefixed with
-# `server.basePath` or require that they are rewritten by your reverse proxy.
-# This setting was effectively always `false` before Kibana 6.3 and will
-# default to `true` starting in Kibana 7.0.
-# server.rewriteBasePath: false
-# The maximum payload size in bytes for incoming server requests.
-# server.maxPayloadBytes: 1048576
-# The Kibana server's name.  This is used for display purposes.
-# server.name: "your-hostname"
-# The URLs of the Elasticsearch instances to use for all your queries.
+
 elasticsearch.hosts: ["http://localhost:9200"]
-# When this setting's value is true Kibana uses the hostname specified in the server.host
-# setting. When the value of this setting is false, Kibana uses the hostname of the host
-# that connects to this Kibana instance.
 
 
 # Now start the Kibana service:
