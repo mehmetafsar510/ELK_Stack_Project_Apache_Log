@@ -56,7 +56,7 @@ sudo apt-get update && sudo apt-get install elasticsearch
 * You have successfully installed Elasticsearch on your EC2 instance but we are not done yet. We need to check the config file now. Open the file, “/etc/elasticsearch/elasticsearch.yml” in your preferred editor (vim, nano). I recommend you to do this after you switch to superuser by executing “sudo su” command. Now you need to edit the config file as follows. The lines which are in bold letters are the changes to be done.
 
 
-# ======================== Elasticsearch Configuration =========================
+# Elasticsearch Configuration ===
 # Use a descriptive name for the node:
 #
 node.name: node-1
@@ -67,7 +67,7 @@ node.name: node-1
 network.host: "localhost"
 # Set a custom port for HTTP:
 http.port: 9200
-# Discovery ----------------------------------
+# Discovery 
 cluster.initial_master_nodes: ["node-1"]
 
 * **## You need to configure JVM heap size to be in the safe side when running the ElasticSearch. Since we are running an m4.large instance, we will allocate 4GB as the heap size. Edit the file “/etc/elasticsearch/jvm.options” and enable the “-Xms4g” lines. 
