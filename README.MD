@@ -56,13 +56,12 @@ sudo apt-get update && sudo apt-get install elasticsearch
 * You have successfully installed Elasticsearch on your EC2 instance but we are not done yet. We need to check the config file now. Open the file, “/etc/elasticsearch/elasticsearch.yml” in your preferred editor (vim, nano). I recommend you to do this after you switch to superuser by executing “sudo su” command. Now you need to edit the config file as follows. The lines which are in bold letters are the changes to be done.
 
 
-# Elasticsearch Configuration ===
+# Elasticsearch Configuration 
 # Use a descriptive name for the node:
 #
 node.name: node-1
 
-# Network -----------------------------------
-#
+# Network 
 # Set the bind address to a specific IP (IPv4 or IPv6):
 network.host: "localhost"
 # Set a custom port for HTTP:
