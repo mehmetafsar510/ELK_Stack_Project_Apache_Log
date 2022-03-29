@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  This Cloudformation Template creates a Kubernetes Cluster on Ubuntu 20.04 of EC2 Instances.
+  Kubernetes cluster comprises of one master node and one worker node.
+  Once the Master node is up and running, Worker node automatically joins the Cluster.
+  Managers security group allows all protocols from all ports within itself and from the Workers.
+  Workers security group allows all protocols from all ports within itself and from the Managers.
+  Both Security groups allows SSH (22) connections from anywhere.
+  User needs to select appropriate key name when launching the template.
+
+Parameters:
+  KeyPairName:
+    Description: Enter the name of your Key Pair for SSH connections.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be one of the existing EC2 KeyPair
+  
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t3a.large
+    AllowedValues:
+      - t1.micro
+      - t3a.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.xlarge
+      - m3.2xlarge
+      - c1.medium
+      - c1.xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  
+Mappings:
+  AWSRegionArch2AMI:
+    us-east-1:
+      '64': ami-013f17f36f8b1fefb
+    us-east-2:
+      '64': ami-03657b56516ab7912
+    us-west-1:
+      '64': ami-0e4035ae3f70c400f 
+    us-west-2:
+      '64': ami-01fee56b22f308154
+    eu-central-1:
+      '64': ami-00a205cb8e06c3c4e
+    eu-central-2:
+      '64': ami-0bb3fad3c0286ebd5
+  InstanceMap:
+    t3a.large:
+      ESHeapSize: 4g
+    m4.large:
+      ESHeapSize: 6g
+    m4.xlarge:
+      ESHeapSize: 8g
+    m4.2xlarge:
+      ESHeapSize: 15g
+
+Resources:
+  InstanceConnectPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      PolicyDocument: #required
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2-instance-connect:SendSSHPublicKey
+            Resource:
+              - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*
+            Condition: {"StringEquals": {"ec2:osuser": "ubuntu"}}
+          - Effect: Allow
+            Action:
+              - ec2:DescribeInstances
+            Resource: "*"
+  
+  EC2InstanceConnect:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref InstanceConnectPolicy
+  EC2ConnectProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles: #required
+        - !Ref EC2InstanceConnect
+  ManagersSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH for Elks
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5601
+          ToPort: 5601
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9400
+          CidrIp: 0.0.0.0/0
+ 
+  ManagersSGIngress1:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !GetAtt ManagersSecurityGroup.GroupId
+      IpProtocol: -1 #required
+      SourceSecurityGroupId: !GetAtt ManagersSecurityGroup.GroupId
+  
+
+  Elk1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0e472ba40eb589f49
+      InstanceType: t3a.large
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1 #xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: '32'
+            DeleteOnTermination: 'true'
+      IamInstanceProfile: !Ref EC2ConnectProfile
+      SecurityGroupIds:
+        - !GetAtt ManagersSecurityGroup.GroupId
+      Tags:                
+        -                        
+          Key: Name
+          Value: !Sub Elk on Ubuntu 18.04 of ${AWS::StackName}
+      UserData: 
+        Fn::Base64: 
+          !Sub 
+            - |
+              #! /bin/bash
+              apt-get update -y
+              apt-get install git -y
+              apt-get install default-jre -y
+              wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+              apt-get install apt-transport-https -y
+              echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+              apt-get update -y && apt-get install elasticsearch -y
+              
+              # Configure Elasticsearch
+              sed -i \
+                -e 's,## -Xms4g,-Xms${ESHeapSize},g' \
+                -e 's,## -Xmx4g,-Xmx${ESHeapSize},g' \
+                /etc/elasticsearch/jvm.options
+              wget -O /etc/elasticsearch/elasticsearch.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/elasticsearch.yml   
+              systemctl start elasticsearch && systemctl enable elasticsearch
+              
+              # Install MetricBeat
+              apt-get install metricbeat -y
+              service metricbeat start
+              apt-get install logstash -y
+              wget -O /home/test_log.log  https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
+              sh -c "cat >> /etc/logstash/conf.d/apache-01.conf<< 'EOF'
+              input {
+                      file {
+                              path => "/home/test_log.log"
+                              start_position => "beginning"
+                      }   
+              }
+              output{
+                      elasticsearch {
+                              hosts => ["localhost:9200"]
+                              
+                      }
+              }      
+              EOF"
+              systemctl start logstash && systemctl enable logstash
+              apt-get install kibana -y
+              wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
+              service kibana start
+              systemctl start kibana && systemctl enable kibana
+            - ESHeapSize: !FindInMap [InstanceMap, !Ref InstanceType, ESHeapSize]
+Outputs:
+  1stElkPublicDNSName:
+    Description: Elk Public DNS Name
+    Value: !Sub 
+      - ${PublicAddress}:5601
+      - PublicAddress: !GetAtt Elk1.PublicDnsName
+  1stElkPrivateDNSName:
+    Description: Elk  Private DNS Name
+    Value: !Sub 
+      - ${PrivateAddress}
+      - PrivateAddress: !GetAtt Elk1.PrivateDnsName
