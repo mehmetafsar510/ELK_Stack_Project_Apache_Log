@@ -135,6 +135,10 @@ Resources:
           ToPort: 5601
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 5044
+          ToPort: 5044
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9400
           CidrIp: 0.0.0.0/0
@@ -205,6 +209,8 @@ Resources:
               
               # Install MetricBeat
               apt-get install metricbeat -y
+              #apt-get install filebeat -y
+              #systemctl start filebeat && systemctl enable filebeat
               service metricbeat start
               apt-get install logstash -y
               wget -O /home/test_log.log  https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
@@ -222,6 +228,9 @@ Resources:
                       }
               }      
               EOF'''
+              cd /etc/logstash/conf.d/
+              wget 
+
               systemctl start logstash && systemctl enable logstash
               apt-get install kibana -y
               wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
