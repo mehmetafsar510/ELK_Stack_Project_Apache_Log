@@ -266,6 +266,9 @@ Resources:
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/output-elastisearch.conf
               sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/logstash/conf.d/output-elastisearch.conf
+              mkdir templates
+              cd /etc/logstash/conf.d/templates
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/template.json
 
               systemctl start logstash && systemctl enable logstash
               apt-get install kibana -y
