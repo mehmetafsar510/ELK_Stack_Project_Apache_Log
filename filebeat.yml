@@ -26,7 +26,7 @@ enabled: true
 
  # Paths that should be crawled and fetched. Glob based paths.
 paths:
-- /var/log/nginx/*
+ - /var/log/nginx/*
  #- c:\programdata\elasticsearch\logs\*
 
  # Exclude lines. A list of regular expressions to match. It drops the lines that are
@@ -50,11 +50,11 @@ paths:
 # ============================== Filebeat modules ==============================
 
 filebeat.config.modules:
- # Glob pattern for configuration loading
-path: ${path.config}/modules.d/*.yml
+  # Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
 
- # Set to true to enable config reloading
-reload.enabled: false
+  # Set to true to enable config reloading
+  reload.enabled: false
 
  # Period on which files under path should be checked for changes
  #reload.period: 10s
@@ -144,8 +144,8 @@ reload.enabled: false
 # ------------------------------ Logstash Output -------------------------------
 output.logstash:
  # The Logstash hosts
-elabled: true
-hosts: ["{SERVERIP}:5044"]
+  elabled: true
+  hosts: ["{SERVERIP}:5044"]
 
  # Optional SSL. By default is off.
  # List of root certificates for HTTPS server verifications
@@ -159,11 +159,11 @@ hosts: ["{SERVERIP}:5044"]
 
 # ================================= Processors =================================
 processors:
-- add_host_metadata:
-when.not.contains.tags: forwarded
-- add_cloud_metadata:
-- add_docker_metadata: ~
-- add_kubernetes_metadata: ~
+  - add_host_metadata:
+    when.not.contains.tags: forwarded
+  - add_cloud_metadata:
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
 
 # ================================== Logging ===================================
 
