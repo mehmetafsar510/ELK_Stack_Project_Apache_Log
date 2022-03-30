@@ -241,10 +241,10 @@ Resources:
               systemctl start elasticsearch && systemctl enable elasticsearch
               
               # Install MetricBeat
-              apt-get install metricbeat -y
+              #apt-get install metricbeat -y
               #apt-get install filebeat -y
               #systemctl start filebeat && systemctl enable filebeat
-              service metricbeat start
+              #service metricbeat start
               apt-get install logstash -y
               wget -O /home/test_log.log  https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
               sh -c '''cat >> /etc/logstash/conf.d/apache-01.conf<< 'EOF'
@@ -347,7 +347,7 @@ Resources:
 
   SERVERIP2:
     Type: AWS::EC2::EIP
-  IPAssoc:
+  IPAssoc2:
     Type: AWS::EC2::EIPAssociation
     Properties:
       InstanceId: !Ref 'DockerMachine'
