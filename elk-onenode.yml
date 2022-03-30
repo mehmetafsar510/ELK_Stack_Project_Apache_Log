@@ -193,7 +193,7 @@ Resources:
         - DeviceName: /dev/sda1 #xvda
           Ebs:
             VolumeType: gp2
-            VolumeSize: '32'
+            VolumeSize: '16'
             DeleteOnTermination: 'true'
       IamInstanceProfile: !Ref EC2ConnectProfile
       SecurityGroupIds:
@@ -201,7 +201,7 @@ Resources:
       Tags:                
         -                        
           Key: Name
-          Value: !Sub Elk on Ubuntu 18.04 of ${AWS::StackName}
+          Value: Elk stack on Ubuntu 18.04
       UserData: 
         Fn::Base64: 
           !Sub 
@@ -275,7 +275,8 @@ Resources:
               wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
               service kibana start
               systemctl start kibana && systemctl enable kibana
-
+              systemctl restart elasticsearch
+              systemctl restart logstash
               echo '0 12 * * * /usr/bin/certbot renew --quiet' >> /tmp/mycrontab
               sudo -u ubuntu bash -c 'crontab /tmp/mycrontab'
             - ESHeapSize: !FindInMap [InstanceMap, !Ref InstanceType, ESHeapSize]
@@ -319,6 +320,7 @@ Resources:
             apt-get update && apt-get install filebeat
             wget -O /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/filebeat.yml
             sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/filebeat/filebeat.yml
+            chmod go-w /etc/filebeat/filebeat.yml
             systemctl start filebeat && systemctl enable filebeat
 
             wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
@@ -334,7 +336,7 @@ Resources:
             export DOMAINFRONT="${FullDomainNginx}"
             export ALERTS_EMAIL="${OperatorEMail}"
             certbot --nginx --redirect -d $DOMAINFRONT --preferred-challenges http --agree-tos -n -m $ALERTS_EMAIL --keep-until-expiring
-
+            systemctl restart filebeat
             cd /home/ubuntu
             git clone https://github.com/mehmetafsar510/ELK_Stack_Project_Apache_Log.git
             cd /home/ubuntu/ELK_Stack_Project_Apache_Log/miliseconds-converter/
