@@ -229,7 +229,10 @@ Resources:
               }      
               EOF'''
               cd /etc/logstash/conf.d/
-              wget 
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/inputlogstash.conf
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/output-elastisearch.conf
+              sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/logstash/conf.d/output-elastisearch.conf
 
               systemctl start logstash && systemctl enable logstash
               apt-get install kibana -y
@@ -240,6 +243,56 @@ Resources:
               echo '0 12 * * * /usr/bin/certbot renew --quiet' >> /tmp/mycrontab
               sudo -u ubuntu bash -c 'crontab /tmp/mycrontab'
             - ESHeapSize: !FindInMap [InstanceMap, !Ref InstanceType, ESHeapSize]
+
+  DockerMachine:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0e472ba40eb589f49
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !GetAtt ManagersSecurityGroup.GroupId
+      Tags:                
+        -                        
+          Key: Name
+          Value: !Sub  ${AWS::StackName}   
+      UserData:
+        Fn::Base64: 
+          !Sub |
+            #! /bin/bash -xe
+
+            apt update -y
+            apt install docker.io -y
+            systemctl start docker
+            systemctl enable docker
+            usermod -a -G docker ubuntu
+            # install docker-compose
+            curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            apt install nginx -y
+            apt install certbot -y
+            apt install python3-certbot-nginx -y
+
+            wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
+            wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/api2.conf
+
+            sed -i "s/{fulldomainfrontend}/${FullDomainFrontend}/g" web2.conf
+            sed -i "s/{port1}/${PortFrontend}/g" web2.conf
+
+            sed -i "s/{fulldomainbackend}/${FullDomainBackend}/g" api2.conf
+            sed -i "s/{port2}/${PortBackend}/g" api2.conf
+
+            sh -c "cat web2.conf >> /etc/nginx/sites-enabled/web.conf"
+            sh -c "cat api2.conf >> /etc/nginx/sites-enabled/api.conf"
+
+            systemctl enable --now nginx
+            systemctl restart nginx
+
+            export DOMAINFRONT="${FullDomainFrontend}"
+            export ALERTS_EMAIL="${OperatorEMail}"
+            certbot --nginx --redirect -d $DOMAINFRONT --preferred-challenges http --agree-tos -n -m $ALERTS_EMAIL --keep-until-expiring
+
 
   SERVERIP:
     Type: AWS::EC2::EIP

@@ -131,7 +131,7 @@ reload.enabled: false
 # ---------------------------- Elasticsearch Output ----------------------------
 #output.elasticsearch:
  # Array of hosts to connect to.
- #hosts: ["elk.westerops.com:9200"]
+ #hosts: ["elk.xxxxxxxx.com:9200"]
 
  # Protocol - either `http` (default) or `https`.
  #protocol: "https"
