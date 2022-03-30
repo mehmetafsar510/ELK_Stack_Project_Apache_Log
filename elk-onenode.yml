@@ -26,6 +26,17 @@ Parameters:
     Type: String
     ConstraintDescription: must be a valid .
     Default: 5601
+  FullDomainNginx:
+    Type: String
+    Description: The full domain name e.g. kibana.mehmetafsar.net
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: must be a valid DNS zone name.
+    Default: milisecond.mehmetafsar.net
+  PortNginx:
+    Description: EMail address to notify if there are any scaling operations
+    Type: String
+    ConstraintDescription: must be a valid .
+    Default: 8000
   OperatorEMail:
     Description: EMail address to notify if there are any scaling operations
     Type: String
@@ -142,6 +153,27 @@ Resources:
           FromPort: 9200
           ToPort: 9400
           CidrIp: 0.0.0.0/0
+  ManagersSecurityGroup2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH for Elks
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5044
+          ToPort: 5044
+          CidrIp: 0.0.0.0/0
  
   ManagersSGIngress1:
     Type: "AWS::EC2::SecurityGroupIngress"
@@ -251,7 +283,7 @@ Resources:
       InstanceType: t2.micro
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
-        - !GetAtt ManagersSecurityGroup.GroupId
+        - !GetAtt ManagersSecurityGroup2.GroupId
       Tags:                
         -                        
           Key: Name
@@ -260,7 +292,7 @@ Resources:
         Fn::Base64: 
           !Sub |
             #! /bin/bash -xe
-
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             apt update -y
             apt install docker.io -y
             systemctl start docker
@@ -274,25 +306,33 @@ Resources:
             apt install certbot -y
             apt install python3-certbot-nginx -y
 
+            apt-get install default-jre -y
+            wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+            apt-get install apt-transport-https -y
+            echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+            apt-get update && apt-get install filebeat
+            wget -O /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/filebeat.yml
+            sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/filebeat/filebeat.yml
+            systemctl start filebeat && systemctl enable filebeat
+
             wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
-            wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/api2.conf
 
-            sed -i "s/{fulldomainfrontend}/${FullDomainFrontend}/g" web2.conf
-            sed -i "s/{port1}/${PortFrontend}/g" web2.conf
-
-            sed -i "s/{fulldomainbackend}/${FullDomainBackend}/g" api2.conf
-            sed -i "s/{port2}/${PortBackend}/g" api2.conf
+            sed -i "s/{fulldomainfrontend}/${FullDomainNginx}/g" web2.conf
+            sed -i "s/{port1}/${PortNginx}/g" web2.conf
 
             sh -c "cat web2.conf >> /etc/nginx/sites-enabled/web.conf"
-            sh -c "cat api2.conf >> /etc/nginx/sites-enabled/api.conf"
 
             systemctl enable --now nginx
             systemctl restart nginx
 
-            export DOMAINFRONT="${FullDomainFrontend}"
+            export DOMAINFRONT="${FullDomainNginx}"
             export ALERTS_EMAIL="${OperatorEMail}"
             certbot --nginx --redirect -d $DOMAINFRONT --preferred-challenges http --agree-tos -n -m $ALERTS_EMAIL --keep-until-expiring
 
+            cd /home/ubuntu
+            git clone https://github.com/mehmetafsar510/ELK_Stack_Project_Apache_Log.git
+            cd /home/ubuntu/ELK_Stack_Project_Apache_Log/miliseconds-converter/
+            python3 miliseconds_converter.py
 
   SERVERIP:
     Type: AWS::EC2::EIP
@@ -301,6 +341,14 @@ Resources:
     Properties:
       InstanceId: !Ref 'Elk1'
       EIP: !Ref 'SERVERIP'
+
+  SERVERIP2:
+    Type: AWS::EC2::EIP
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref 'DockerMachine'
+      EIP: !Ref 'SERVERIP2'
   
   myDNSRecord1:
     Type: AWS::Route53::RecordSet
@@ -309,6 +357,16 @@ Resources:
       Name: !Ref FullDomainFrontend
       ResourceRecords: 
       - !Ref SERVERIP
+      TTL: 900
+      Type: A
+  
+  myDNSRecord2:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId : !Ref DomainName
+      Name: !Ref FullDomainNginx
+      ResourceRecords: 
+      - !Ref SERVERIP2
       TTL: 900
       Type: A
 
@@ -328,3 +386,8 @@ Outputs:
     Value: !Sub 
       - https://${PublicAddress}
       - PublicAddress: !Ref FullDomainFrontend
+  WebsiteNginxURL:
+    Description: Elk Machine DNS Name
+    Value: !Sub 
+      - https://${PublicAddress}
+      - PublicAddress: !Ref FullDomainNginx
