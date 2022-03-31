@@ -264,10 +264,11 @@ Resources:
               cd /etc/logstash/conf.d/
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/inputlogstash.conf
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
-              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/output-elastisearch.conf
-              sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/logstash/conf.d/output-elastisearch.conf
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/output-elasticsearch.conf
+              #sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/logstash/conf.d/output-elasticsearch.conf
+              cd /etc/logstash/
               mkdir templates
-              cd /etc/logstash/conf.d/templates
+              cd /etc/logstash/templates
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/template.json
 
               systemctl start logstash && systemctl enable logstash
