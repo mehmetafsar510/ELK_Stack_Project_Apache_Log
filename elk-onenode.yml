@@ -276,8 +276,6 @@ Resources:
               wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
               service kibana start
               systemctl start kibana && systemctl enable kibana
-              systemctl restart elasticsearch
-              systemctl restart logstash
               echo '0 12 * * * /usr/bin/certbot renew --quiet' >> /tmp/mycrontab
               sudo -u ubuntu bash -c 'crontab /tmp/mycrontab'
             - ESHeapSize: !FindInMap [InstanceMap, !Ref InstanceType, ESHeapSize]
@@ -322,6 +320,7 @@ Resources:
             wget -O /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/filebeat.yml
             sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/filebeat/filebeat.yml
             chmod go-w /etc/filebeat/filebeat.yml
+            #filebeat module enable nginx
             systemctl start filebeat && systemctl enable filebeat
 
             wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
