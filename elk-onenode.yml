@@ -246,26 +246,8 @@ Resources:
               #systemctl start filebeat && systemctl enable filebeat
               #service metricbeat start
               apt-get install logstash -y
-              wget -O /home/test_log.log  https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
-              sh -c '''cat >> /etc/logstash/conf.d/apache-01.conf<< 'EOF'
-              input {
-                      file {
-                              path => "/home/test_log.log"
-                              start_position => "beginning"
-                      }   
-              }
-              output{
-                      elasticsearch {
-                              hosts => ["localhost:9200"]
-                              
-                      }
-              }      
-              EOF'''
               cd /etc/logstash/conf.d/
-              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/inputlogstash.conf
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
-              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/output-elasticsearch.conf
-              #sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/logstash/conf.d/output-elasticsearch.conf
               cd /etc/logstash/
               mkdir templates
               cd /etc/logstash/templates
@@ -317,10 +299,10 @@ Resources:
             apt-get install apt-transport-https -y
             echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
             apt-get update && apt-get install filebeat
+            filebeat modules disable nginx
             wget -O /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/filebeat.yml
             sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/filebeat/filebeat.yml
             chmod go-w /etc/filebeat/filebeat.yml
-            #filebeat module enable nginx
             systemctl start filebeat && systemctl enable filebeat
 
             wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
