@@ -241,31 +241,31 @@ Resources:
               echo 'xpack.security.enabled: true' >> /etc/elasticsearch/elasticsearch.yml
               systemctl start elasticsearch && systemctl enable elasticsearch
               echo "y" | /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto > /home/ubuntu/password.txt
-              kibanapassword=$(cat /home/ubuntu/password.txt | awk '/elastic/ {print $4}' | tail -n 1)'
-              elasticpassword=$(cat /home/ubuntu/password.txt | awk '/elastic/ {print $4}' | tail -n 1)'
-
-              sed -i.bak '/\.username/s/^#//' /etc/kibana/kibana.yml
-              sed -i 's/#elasticsearch.password: "pass"/elasticsearch.password: "$kibanapassword"/g' /etc/kibana/kibana.yml
+              KPASSWD=$(cat /home/ubuntu/password.txt | awk '/kibana/ {print $4}' | tail -n 1)
+              EPASSWD=$(cat /home/ubuntu/password.txt | awk '/elastic/ {print $4}' | tail -n 1)
 
               # Install MetricBeat
-              #apt-get install metricbeat -y
-              #apt-get install filebeat -y
-              #systemctl start filebeat && systemctl enable filebeat
-              #service metricbeat start
+              apt-get install metricbeat -y
+              sed -i "s/#username: \"elastic\"/username: \"elastic\"/g" /etc/metricbeat/metricbeat.yml
+              sed -i "s/#password: \"changeme\"/password: \"$EPASSWD\"/g" /etc/metricbeat/metricbeat.yml
+              systemctl start metricbeat && systemctl enable metricbeat
               apt-get install logstash -y
               cd /etc/logstash/conf.d/
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
-              sed -i 's/{password}/$elasticpassword/g' /etc/logstash/conf.d/logstash-nginx.conf
+              sed -i "s/{password}/$EPASSWD/g" /etc/logstash/conf.d/logstash-nginx.conf
 
               cd /etc/logstash/
               mkdir templates
               cd /etc/logstash/templates
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/template.json
+              wget -O /home/test_log.log https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
 
               systemctl start logstash && systemctl enable logstash
               apt-get install kibana -y
               wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
-              systemctl start elasticsearch && systemctl enable elasticsearch
+              sed -i.bak '/\.username/s/^#//' /etc/kibana/kibana.yml
+              sed -i "s/#elasticsearch.password: \"pass\"/elasticsearch.password: \"$KPASSWD\"/g" /etc/kibana/kibana.yml
+              systemctl restart elasticsearch 
               systemctl start kibana && systemctl enable kibana
               echo '0 12 * * * /usr/bin/certbot renew --quiet' >> /tmp/mycrontab
               sudo -u ubuntu bash -c 'crontab /tmp/mycrontab'
