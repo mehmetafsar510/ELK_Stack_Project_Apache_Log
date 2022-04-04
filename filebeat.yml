@@ -27,6 +27,11 @@ filebeat.inputs:
  # Paths that should be crawled and fetched. Glob based paths.
   paths:
     - /var/log/nginx/*
+  tags: ["nginx"]
+
+- type: syslog   # activate syslog module
+  protocol.udp:
+    host: "localhost:514"
  #- c:\programdata\elasticsearch\logs\*
 
  # Exclude lines. A list of regular expressions to match. It drops the lines that are
