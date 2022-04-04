@@ -257,6 +257,7 @@ Resources:
               sed -i "s/#username: \"elastic\"/username: \"elastic\"/g" /etc/metricbeat/metricbeat.yml
               sed -i "s/#password: \"changeme\"/password: \"$EPASSWD\"/g" /etc/metricbeat/metricbeat.yml
               systemctl start metricbeat && systemctl enable metricbeat
+              
               apt-get install logstash -y
               cd /etc/logstash/conf.d/
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
@@ -270,7 +271,15 @@ Resources:
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/template.json
               wget -O /home/test_log.log https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
 
+              usermod -aG adm logstash
+              mkdir /etc/logstash/pattern
+              chmod 755 -R /etc/logstash/pattern
+              sh -c "cat >> /etc/logstash/pattern/nginx<< 'EOF'
+              NGUSERNAME [a-zA-Z\.\@\-\+_%]+
+              NGUSER %{NGUSERNAME}
+              EOF"
               systemctl start logstash && systemctl enable logstash
+
               apt-get install kibana -y
               wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
               sed -i.bak '/\.username/s/^#//' /etc/kibana/kibana.yml
