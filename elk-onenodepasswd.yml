@@ -260,13 +260,6 @@ Resources:
               sed -i "s/{password}/$EPASSWD/g" /etc/logstash/conf.d/logstash-nginx.conf
               sed -i "s/{password}/$EPASSWD/g" /etc/logstash/conf.d/logstash-apache.conf
 
-              mkdir /etc/logstash/pattern
-              chmod 755 -R /etc/logstash/pattern
-              sh -c "cat >> /etc/logstash/pattern/nginx<< 'EOF'
-              NGUSERNAME [a-zA-Z\.\@\-\+_%]+
-              NGUSER %{NGUSERNAME}
-              EOF"
-
               cd /etc/logstash/
               mkdir templates
               cd /etc/logstash/templates
