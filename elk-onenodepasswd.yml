@@ -146,6 +146,10 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 19092
+          ToPort: 19092
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 5601
           ToPort: 5601
           CidrIp: 0.0.0.0/0
@@ -167,6 +171,10 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 19092
+          ToPort: 19092
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
           CidrIp: 0.0.0.0/0
@@ -177,10 +185,6 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 5044
-          ToPort: 5044
           CidrIp: 0.0.0.0/0
  
   ManagersSGIngress1:
@@ -257,7 +261,7 @@ Resources:
               sed -i "s/#username: \"elastic\"/username: \"elastic\"/g" /etc/metricbeat/metricbeat.yml
               sed -i "s/#password: \"changeme\"/password: \"$EPASSWD\"/g" /etc/metricbeat/metricbeat.yml
               systemctl start metricbeat && systemctl enable metricbeat
-              
+
               apt-get install logstash -y
               cd /etc/logstash/conf.d/
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
