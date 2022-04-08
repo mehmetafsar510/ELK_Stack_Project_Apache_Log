@@ -7,10 +7,10 @@ setup.template.settings:
   index.number_of_shards: 1
 
 setup.kibana:
-  host: "{KIBANAIP}:5601"
+  host: "{SERVERIP}:5601"
 
 output.kafka:
-  hosts: ["{LOCALIP}:9092"]
+  hosts: ["{SERVERIP2}:9092"]
   topic: "filebeat"
   codec.format:
     string: '%{[@timestamp]} %{[message]}'

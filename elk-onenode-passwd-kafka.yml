@@ -1,0 +1,443 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  This Cloudformation Template creates a ELK Stack on Ubuntu 20.04 of EC2 Instances..
+  Managers security group allows all protocols from all ports within itself.
+  Workers security group allows all protocols from all ports within itself.
+  Both Security groups allows SSH (22) connections from anywhere.
+  User needs to select appropriate key name when launching the template.
+
+Parameters:
+  KeyPairName:
+    Description: Enter the name of your Key Pair for SSH connections.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be one of the existing EC2 KeyPair
+  DomainName:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The DNS name of an existing Amazon Route 53 hosted zone e.g. westerops.com
+  FullDomainFrontend:
+    Type: String
+    Description: The full domain name e.g. kibana.mehmetafsar.net
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: must be a valid DNS zone name.
+    Default: kibana.mehmetafsar.net
+  PortFrontend:
+    Description: EMail address to notify if there are any scaling operations
+    Type: String
+    ConstraintDescription: must be a valid .
+    Default: 5601
+  FullDomainNginx:
+    Type: String
+    Description: The full domain name e.g. kibana.mehmetafsar.net
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: must be a valid DNS zone name.
+    Default: milisecond.mehmetafsar.net
+  PortNginx:
+    Description: EMail address to notify if there are any scaling operations
+    Type: String
+    ConstraintDescription: must be a valid .
+    Default: 8000
+  OperatorEMail:
+    Description: EMail address to notify if there are any scaling operations
+    Type: String
+    AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
+    ConstraintDescription: must be a valid email address.
+    Default: drmehmet510@gmail.com
+  
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t3a.large
+    AllowedValues:
+      - t1.micro
+      - t3a.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.xlarge
+      - m3.2xlarge
+      - c1.medium
+      - c1.xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  
+Mappings:
+  AWSRegionArch2AMI:
+    us-east-1:
+      '64': ami-013f17f36f8b1fefb
+    us-east-2:
+      '64': ami-03657b56516ab7912
+    us-west-1:
+      '64': ami-0e4035ae3f70c400f 
+    us-west-2:
+      '64': ami-01fee56b22f308154
+    eu-central-1:
+      '64': ami-00a205cb8e06c3c4e
+    eu-central-2:
+      '64': ami-0bb3fad3c0286ebd5
+  InstanceMap:
+    t3a.large:
+      ESHeapSize: 4g
+    m4.large:
+      ESHeapSize: 6g
+    m4.xlarge:
+      ESHeapSize: 8g
+    m4.2xlarge:
+      ESHeapSize: 15g
+
+Resources:
+  InstanceConnectPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      PolicyDocument: #required
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2-instance-connect:SendSSHPublicKey
+            Resource:
+              - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*
+            Condition: {"StringEquals": {"ec2:osuser": "ubuntu"}}
+          - Effect: Allow
+            Action:
+              - ec2:DescribeInstances
+            Resource: "*"
+  
+  EC2InstanceConnect:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref InstanceConnectPolicy
+  EC2ConnectProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles: #required
+        - !Ref EC2InstanceConnect
+  ManagersSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH for Elks
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 514
+          ToPort: 514
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9092
+          ToPort: 9092
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9093
+          ToPort: 9093
+        - IpProtocol: tcp
+          FromPort: 9094
+          ToPort: 9094
+        - IpProtocol: tcp
+          FromPort: 5601
+          ToPort: 5601
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5044
+          ToPort: 5044
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9400
+          CidrIp: 0.0.0.0/0
+  ManagersSecurityGroup2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH for Elks
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9092
+          ToPort: 9092
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9093
+          ToPort: 9093
+        - IpProtocol: tcp
+          FromPort: 9094
+          ToPort: 9094
+          CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+ 
+  ManagersSGIngress1:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !GetAtt ManagersSecurityGroup.GroupId
+      IpProtocol: -1 #required
+      SourceSecurityGroupId: !GetAtt ManagersSecurityGroup.GroupId
+  
+
+  Elk1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0e472ba40eb589f49
+      InstanceType: t3a.large
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1 #xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: '16'
+            DeleteOnTermination: 'true'
+      IamInstanceProfile: !Ref EC2ConnectProfile
+      SecurityGroupIds:
+        - !GetAtt ManagersSecurityGroup.GroupId
+      Tags:                
+        -                        
+          Key: Name
+          Value: Elk stack on Ubuntu 18.04
+      UserData: 
+        Fn::Base64: 
+          !Sub 
+            - |
+              #! /bin/bash -xe
+              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+              apt-get update -y
+              apt-get install git -y
+              apt install nginx -y
+              apt install certbot -y
+              apt install python3-certbot-nginx -y
+              apt-get install default-jre -y
+              wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+              apt-get install apt-transport-https -y
+              echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+              apt-get update -y && apt-get install elasticsearch -y
+
+              wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
+              sed -i "s/{fulldomainfrontend}/${FullDomainFrontend}/g" web2.conf
+              sed -i "s/{port1}/${PortFrontend}/g" web2.conf
+
+              sh -c "cat web2.conf >> /etc/nginx/sites-enabled/web.conf"
+              systemctl enable --now nginx
+              systemctl restart nginx
+
+              export DOMAINFRONT="${FullDomainFrontend}"
+              export ALERTS_EMAIL="${OperatorEMail}"
+              certbot --nginx --redirect -d $DOMAINFRONT --preferred-challenges http --agree-tos -n -m $ALERTS_EMAIL --keep-until-expiring
+
+              
+              # Configure Elasticsearch
+              sed -i \
+                -e 's,## -Xms4g,-Xms${ESHeapSize},g' \
+                -e 's,## -Xmx4g,-Xmx${ESHeapSize},g' \
+                /etc/elasticsearch/jvm.options
+              wget -O /etc/elasticsearch/elasticsearch.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/elasticsearch.yml   
+              echo 'xpack.security.enabled: true' >> /etc/elasticsearch/elasticsearch.yml
+              systemctl start elasticsearch && systemctl enable elasticsearch
+              echo "y" | /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto > /home/ubuntu/password.txt
+              KPASSWD=$(cat /home/ubuntu/password.txt | awk '/kibana/ {print $4}' | tail -n 1)
+              EPASSWD=$(cat /home/ubuntu/password.txt | awk '/elastic/ {print $4}' | tail -n 1)
+
+              # Install MetricBeat
+              apt-get install metricbeat -y
+              sed -i "s/#username: \"elastic\"/username: \"elastic\"/g" /etc/metricbeat/metricbeat.yml
+              sed -i "s/#password: \"changeme\"/password: \"$EPASSWD\"/g" /etc/metricbeat/metricbeat.yml
+              systemctl start metricbeat && systemctl enable metricbeat
+
+              apt-get install logstash -y
+              cd /etc/logstash/conf.d/
+              #wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-apache.conf
+              wget  https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx-kafka.conf
+              sed -i "s/{password}/$EPASSWD/g" /etc/logstash/conf.d/logstash-nginx-kafka.conf
+              sed -i "s/{KAFKASERVERIP}/${SERVERIP2}/g" /etc/logstash/conf.d/logstash-nginx-kafka.conf
+              sed -i "s/{password}/$EPASSWD/g" /etc/logstash/conf.d/logstash-apache.conf
+
+
+              cd /etc/logstash/
+              mkdir templates
+              cd /etc/logstash/templates
+              wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/template.json
+              wget -O /home/test_log.log https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/apachedailyacceslog.txt
+
+              usermod -aG adm logstash
+              mkdir /etc/logstash/pattern
+              chmod 755 -R /etc/logstash/pattern
+              sh -c "cat >> /etc/logstash/pattern/nginx<< 'EOF'
+              NGUSERNAME [a-zA-Z\.\@\-\+_%]+
+              NGUSER %{NGUSERNAME}
+              EOF"
+              systemctl start logstash && systemctl enable logstash
+
+              apt-get install kibana -y
+              wget -O /etc/kibana/kibana.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/kibana.yml
+              sed -i.bak '/\.username/s/^#//' /etc/kibana/kibana.yml
+              sed -i "s/#elasticsearch.password: \"pass\"/elasticsearch.password: \"$KPASSWD\"/g" /etc/kibana/kibana.yml
+              systemctl restart elasticsearch 
+              systemctl start kibana && systemctl enable kibana
+              echo '0 12 * * * /usr/bin/certbot renew --quiet' >> /tmp/mycrontab
+              sudo -u ubuntu bash -c 'crontab /tmp/mycrontab'
+            - ESHeapSize: !FindInMap [InstanceMap, !Ref InstanceType, ESHeapSize]
+
+  DockerMachine:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0e472ba40eb589f49
+      InstanceType: t2.small
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !GetAtt ManagersSecurityGroup2.GroupId
+      Tags:                
+        -                        
+          Key: Name
+          Value: !Sub  ${AWS::StackName}   
+      UserData:
+        Fn::Base64: 
+          !Sub |
+            #! /bin/bash -xe
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            apt update -y
+            apt install docker.io -y
+            systemctl start docker
+            systemctl enable docker
+            usermod -a -G docker ubuntu
+            # install docker-compose
+            curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            apt install nginx -y
+            apt install certbot -y
+            apt install python3-certbot-nginx -y
+            apt install python3-pip -y
+            pip3 install flask
+
+            apt-get install default-jre -y
+            wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+            apt-get install apt-transport-https -y
+            echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+            apt-get update && apt-get install filebeat
+            filebeat modules disable nginx
+            filebeat modules enable system
+            wget -O /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/filebeat-kafka.yml
+            sed -i "s/{SERVERIP}/${SERVERIP}/g" /etc/filebeat/filebeat.yml
+            sed -i "s/{SERVERIP2}/${SERVERIP2}/g" /etc/filebeat/filebeat.yml
+            chmod go-w /etc/filebeat/filebeat.yml
+            systemctl start filebeat && systemctl enable filebeat
+            systemctl restart rsyslog
+
+            wget https://raw.githubusercontent.com/mehmetafsar510/nginx-certbot/master/web2.conf
+
+            sed -i "s/{fulldomainfrontend}/${FullDomainNginx}/g" web2.conf
+            sed -i "s/{port1}/${PortNginx}/g" web2.conf
+
+            sh -c "cat web2.conf >> /etc/nginx/sites-enabled/web.conf"
+
+            systemctl enable --now nginx
+            systemctl restart nginx
+
+            export DOMAINFRONT="${FullDomainNginx}"
+            export ALERTS_EMAIL="${OperatorEMail}"
+            certbot --nginx --redirect -d $DOMAINFRONT --preferred-challenges http --agree-tos -n -m $ALERTS_EMAIL --keep-until-expiring
+            systemctl restart filebeat
+            docker run -d -p 8080:80 nginx
+            curl http://localhost:8080
+
+            cd /home/ubuntu
+            wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/docker-compose.yml
+            sed -i "s/{localhost}/${SERVERIP2}/g" /home/ubuntu/docker-compose.yml
+            docker-compose up -d zoo1 zoo2 zoo3
+            docker-compose up -d kafka1 kafka2 kafka3
+            docker run --rm confluentinc/cp-kafka:7.0.1 kafka-topics --bootstrap-server ${SERVERIP2}:9092 --list
+            git clone https://github.com/mehmetafsar510/ELK_Stack_Project_Apache_Log.git
+            cd /home/ubuntu/ELK_Stack_Project_Apache_Log/miliseconds-converter/
+            python3 miliseconds_converter.py
+
+  SERVERIP:
+    Type: AWS::EC2::EIP
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref 'Elk1'
+      EIP: !Ref 'SERVERIP'
+
+  SERVERIP2:
+    Type: AWS::EC2::EIP
+  IPAssoc2:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref 'DockerMachine'
+      EIP: !Ref 'SERVERIP2'
+  
+  myDNSRecord1:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId : !Ref DomainName
+      Name: !Ref FullDomainFrontend
+      ResourceRecords: 
+      - !Ref SERVERIP
+      TTL: 900
+      Type: A
+  
+  myDNSRecord2:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId : !Ref DomainName
+      Name: !Ref FullDomainNginx
+      ResourceRecords: 
+      - !Ref SERVERIP2
+      TTL: 900
+      Type: A
+
+Outputs:
+  ElkPublicDNSName:
+    Description: Elk Public DNS Name
+    Value: !Sub 
+      - ${PublicAddress}:5601
+      - PublicAddress: !GetAtt Elk1.PublicDnsName
+  ElkPrivateDNSName:
+    Description: Elk  Private DNS Name
+    Value: !Sub 
+      - ${PrivateAddress}
+      - PrivateAddress: !GetAtt Elk1.PrivateDnsName
+  WebsiteFrontendURL:
+    Description: Elk Machine DNS Name
+    Value: !Sub 
+      - https://${PublicAddress}
+      - PublicAddress: !Ref FullDomainFrontend
+  WebsiteNginxURL:
+    Description: Elk Machine DNS Name
+    Value: !Sub 
+      - https://${PublicAddress}
+      - PublicAddress: !Ref FullDomainNginx
