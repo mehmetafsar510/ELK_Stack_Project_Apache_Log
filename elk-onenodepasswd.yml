@@ -146,9 +146,15 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 19092
-          ToPort: 19092
+          FromPort: 9092
+          ToPort: 9092
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9093
+          ToPort: 9093
+        - IpProtocol: tcp
+          FromPort: 9094
+          ToPort: 9094
         - IpProtocol: tcp
           FromPort: 5601
           ToPort: 5601
@@ -171,8 +177,16 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 19092
-          ToPort: 19092
+          FromPort: 9092
+          ToPort: 9092
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9093
+          ToPort: 9093
+        - IpProtocol: tcp
+          FromPort: 9094
+          ToPort: 9094
+          CidrIp: 0.0.0.0/0
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 8080

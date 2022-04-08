@@ -1,0 +1,28 @@
+filebeat.inputs:
+- type: container
+  paths:
+    - '/var/lib/docker/containers/*/*.log'
+
+setup.template.settings:
+  index.number_of_shards: 1
+
+setup.kibana:
+  host: "{KIBANAIP}:5601"
+
+output.kafka:
+  hosts: ["{LOCALIP}:9092"]
+  topic: "filebeat"
+  codec.format:
+    string: '%{[@timestamp]} %{[message]}'
+  partition.round_robin:
+    reachable_only: false
+  required_acks: 1
+  compression: gzip
+  max_message_bytes: 1000000
+  close_inactive: 10m
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
