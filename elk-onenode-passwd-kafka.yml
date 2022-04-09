@@ -152,9 +152,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 9093
           ToPort: 9093
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 9094
           ToPort: 9094
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 5601
           ToPort: 5601
@@ -183,10 +185,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 9093
           ToPort: 9093
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 9094
           ToPort: 9094
-          CidrIp: 0.0.0.0/0
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 8080
@@ -278,7 +280,6 @@ Resources:
 
               apt-get install logstash -y
               cd /etc/logstash/conf.d/
-              #wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx.conf
               wget https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-apache.conf
               wget  https://raw.githubusercontent.com/mehmetafsar510/ELK_Stack_Project_Apache_Log/main/logstash-nginx-kafka.conf
               sed -i "s/{password}/$EPASSWD/g" /etc/logstash/conf.d/logstash-nginx-kafka.conf
@@ -315,7 +316,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0e472ba40eb589f49
-      InstanceType: t2.small
+      InstanceType: t3a.large
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !GetAtt ManagersSecurityGroup2.GroupId
@@ -372,6 +373,7 @@ Resources:
             certbot --nginx --redirect -d $DOMAINFRONT --preferred-challenges http --agree-tos -n -m $ALERTS_EMAIL --keep-until-expiring
             systemctl restart filebeat
             docker run -d -p 8080:80 nginx
+            sleep 5
             curl http://localhost:8080
 
             cd /home/ubuntu
@@ -379,10 +381,12 @@ Resources:
             sed -i "s/{localhost}/${SERVERIP2}/g" /home/ubuntu/docker-compose.yml
             docker-compose up -d zoo1 zoo2 zoo3
             docker-compose up -d kafka1 kafka2 kafka3
+            sleep 15
             docker run --rm confluentinc/cp-kafka:7.0.1 kafka-topics --bootstrap-server ${SERVERIP2}:9092 --list
             git clone https://github.com/mehmetafsar510/ELK_Stack_Project_Apache_Log.git
             cd /home/ubuntu/ELK_Stack_Project_Apache_Log/miliseconds-converter/
             python3 miliseconds_converter.py
+            
 
   SERVERIP:
     Type: AWS::EC2::EIP
