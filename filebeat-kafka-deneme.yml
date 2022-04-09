@@ -4,18 +4,17 @@ filebeat.inputs:
   enabled: true
   paths:
     - /var/log/nginx/*
-  document_type: nginx
+  tags: ["nginx"]
 
 - type: container
   paths:
     - '/var/lib/docker/containers/*/*.log'
   enable: true
-  document_type: docker
+  tags: ["docker"]
 
 - type: syslog   # activate syslog module
   protocol.udp:
     host: "localhost:514"
-  document_type: syslog
 
 setup.template.settings:
   index.number_of_shards: 1
@@ -25,7 +24,7 @@ setup.kibana:
 
 output.kafka:
   hosts: ["{SERVERIP2}:9092"]
-  topic: '%{[type]}'
+  topic: 'filebeat'
   codec.format:
     string: '%{[@timestamp]} %{[message]}'
   partition.round_robin:
