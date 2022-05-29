@@ -1,6 +1,6 @@
 ## Setting up ELK Stack (Elastic Stack) on AWS EC2 instance:
 
-![Architecture](elk.png)
+![Architecture](elkk.png)
 
 # Steps:
 
