@@ -9,7 +9,7 @@ input {
 
 output {
   elasticsearch {
-    hosts => ["http://${elasticsearch}:9200"]
+    hosts => ["http://${elasticsearch}:9200", "http://${elasticsearch1}:9200", "http://${elasticsearch2}:9200"]
     index => "logstash"
   }
 }

@@ -5,13 +5,14 @@
 module "networking" {
   source           = "./modules/networking"
   vpc_cidr         = local.vpc_cidr
-  private_sn_count = 6
-  public_sn_count  = 6
+  private_sn_count = 5
+  public_sn_count  = 5
   private_cidrs    = [for i in range(1, 255, 2) : cidrsubnet(local.vpc_cidr, 8, i)]
   public_cidrs     = [for i in range(2, 255, 2) : cidrsubnet(local.vpc_cidr, 8, i)]
-  max_subnets      = 20
+  max_subnets      = 5
   access_ip        = var.access_ip
   security_groups  = local.security_groups
+  availability     = var.availability
 
 }
 
@@ -40,6 +41,7 @@ module "compute" {
   logstash_sg           = module.networking.logstash_sg
   filebeat_sg           = module.networking.filebeat_sg
   public_subnets        = module.networking.public_subnets
+  load_balancer_endpoint = module.loadbalancing.lb_endpoint
   instance_count        = 3
   instance_type_elastic = "t3a.large"
   instance_type_others  = "t2.small"

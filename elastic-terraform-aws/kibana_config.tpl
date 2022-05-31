@@ -24,8 +24,11 @@ server.rewriteBasePath: false
 # The Kibana server's name.  This is used for display purposes.
 server.name: "kibana"
 
-# The URLs of the Elasticsearch instances to use for all your queries.
-elasticsearch.hosts: ["http://${elasticsearch}:9200"]
+# The URLs of the Elasticsearch instances to use for all your queries. ["http://${elasticsearch}:9200"]
+elasticsearch.hosts: 
+  - http://${elasticsearch}:9200
+  - http://${elasticsearch1}:9200
+  - http://${elasticsearch2}:9200
 
 # When this setting's value is true Kibana uses the hostname specified in the server.host
 # setting. When the value of this setting is false, Kibana uses the hostname of the host

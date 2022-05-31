@@ -101,6 +101,8 @@ data "template_file" "init_kibana" {
   template = file("${path.root}/kibana_config.tpl")
   vars = {
     elasticsearch = aws_instance.elastic_nodes[0].public_ip
+    elasticsearch1 = aws_instance.elastic_nodes[1].public_ip
+    elasticsearch2 = aws_instance.elastic_nodes[2].public_ip
   }
 }
 resource "null_resource" "move_kibana_file" {
@@ -166,6 +168,8 @@ data "template_file" "init_logstash" {
   template = file("${path.root}/logstash_config.tpl")
   vars = {
     elasticsearch = aws_instance.elastic_nodes[0].public_ip
+    elasticsearch1 = aws_instance.elastic_nodes[1].public_ip
+    elasticsearch2 = aws_instance.elastic_nodes[2].public_ip
   }
 }
 resource "null_resource" "move_logstash_file" {
@@ -213,7 +217,7 @@ resource "aws_instance" "filebeat" {
   depends_on = [ 
     null_resource.install_logstash
    ]
-  count         = 1
+  count                  = 1
   ami                    = data.aws_ami.server_ami.id
   instance_type          = var.instance_type_others
   subnet_id = var.public_subnets[count.index]
